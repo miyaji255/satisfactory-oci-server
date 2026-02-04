@@ -1,0 +1,25 @@
+{
+  "name": "satisfactory-oci-server",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist --target bun",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@djwoodz/satisfactory-dedicated-server-lightweight-query-probe": "^0.1.0",
+    "arkregex": "^0.0.5",
+    "discord.js": "^14.22.1",
+    "valibot": "^1.2.0"
+  }
+}
