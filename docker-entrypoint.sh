@@ -29,7 +29,7 @@ if [ -n "$TS_AUTH_KEY" ]; then
 fi
 
 # バックグラウンドでbotを起動（ログをファイルに出力）
-/service/logs/satisfactory-service >> /service/satisfactory-service.log 2>&1 &
+/service/satisfactory-service >> /service/satisfactory-service.log 2>&1 &
 
 # 元のinit.shを実行（フォアグラウンド）
 exec /init.sh "$@"

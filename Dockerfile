@@ -1,4 +1,4 @@
-FROM wolveix/satisfactory-server:v1.9.10
+FROM wolveix/satisfactory-server:latest
 
 # Install Tailscale
 RUN curl -fsSL https://tailscale.com/install.sh | sh && \
