@@ -7,7 +7,7 @@
   // Server settings
   "server": {
     "ip": "127.0.0.1",
-    "port": 7777,
+    "port": 8888,
     "maxPlayers": 4,
     "queryTimeoutMs": 10000
   },
