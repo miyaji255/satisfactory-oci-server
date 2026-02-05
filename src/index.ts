@@ -49,15 +49,15 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
 
     // Handle unreachable -> reachable
     if (previouslyUnreachable && !config.disableUnreachableFoundMessages) {
-      await sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, ':thumbsup: サーバーが見つかりました。');
+      await sendDiscordMessage(client, config.discord.channelName, ':thumbsup: サーバーが見つかりました。');
       db = updateServer(db, { unreachable: false });
     }
 
     // Handle game state
     if (data.serverState === 'Game ongoing') {
       if (!previouslyOnline) {
-        await sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, ':rocket: サーバーが**オンライン**に戻りました！');
-        await sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, `:rocket: サーバーバージョン: **${data.serverVersion}**`);
+        await sendDiscordMessage(client, config.discord.channelName, ':rocket: サーバーが**オンライン**に戻りました！');
+        await sendDiscordMessage(client, config.discord.channelName, `:rocket: サーバーバージョン: **${data.serverVersion}**`);
       }
       db = updateServer(db, {
         version: data.serverVersion,
@@ -66,7 +66,7 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
       });
     } else {
       if (previouslyOnline) {
-        await sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, ':tools: サーバーが**オフライン**になりました。');
+        await sendDiscordMessage(client, config.discord.channelName, ':tools: サーバーが**オフライン**になりました。');
       }
       db = updateServer(db, {
         version: data.serverVersion,
@@ -90,7 +90,7 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
 
     if (!db.server.unreachable) {
       if (!config.disableUnreachableFoundMessages) {
-        await sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, ':man_shrugging: サーバーに到達できません。');
+        await sendDiscordMessage(client, config.discord.channelName, ':man_shrugging: サーバーに到達できません。');
       }
       db = updateServer(db, { unreachable: true, online: false });
       await saveDatabase(config.dbPath, db);
@@ -134,7 +134,6 @@ function handleLoginRequest(client: ReturnType<typeof createDiscordClient>, data
     ) {
       sendDiscordMessage(
         client,
-        config.discord.serverName,
         config.discord.channelName,
         `:warning: **${data.name}**のユーザーIDは**${formatList(INVALID_UNKNOWN_NAMES)}**です。キャラクターのインベントリが失われている可能性があります。再起動して再接続してください...`,
       );
@@ -193,7 +192,7 @@ function handleJoinSucceeded(client: ReturnType<typeof createDiscordClient>, dat
         const timestamp = getTimestamp();
         let string = `:astronaut: ${config.server.maxPlayers}人中**${onlinePlayers.length}**人がオンライン${playerList ? `: **${playerList}**` : ''} (${timestamp})\n`;
         string += `    :arrow_right: **${data.name}**がサーバーに参加しました。`;
-        sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, string);
+        sendDiscordMessage(client, config.discord.channelName, string);
         if (db.server.online) {
           setDiscordActivity(client, `${onlinePlayers.length}/${config.server.maxPlayers}人がオンライン`);
         }
@@ -212,7 +211,6 @@ function handleConnectionClose(client: ReturnType<typeof createDiscordClient>, d
     ) {
       sendDiscordMessage(
         client,
-        config.discord.serverName,
         config.discord.channelName,
         `:information_source: **${formatList(INVALID_UNKNOWN_NAMES)}**接続が閉じられました。`,
       );
@@ -235,7 +233,7 @@ function handleConnectionClose(client: ReturnType<typeof createDiscordClient>, d
         const timestamp = getTimestamp();
         let string = `:astronaut: ${config.server.maxPlayers}人中**${onlinePlayers.length}**人がオンライン${playerList ? `: **${playerList}**` : ''} (${timestamp})\n`;
         string += `    :arrow_left: **${leftPlayerName}**が**${formatMinutes(playTimeInMinutes)}**プレイしてサーバーを離れました。`;
-        sendDiscordMessage(client, config.discord.serverName, config.discord.channelName, string);
+        sendDiscordMessage(client, config.discord.channelName, string);
         if (db.server.online) {
           setDiscordActivity(client, `${onlinePlayers.length}/${config.server.maxPlayers}人がオンライン`);
         }

@@ -7,7 +7,6 @@ import * as v from "valibot";
 
 // Purge config schema
 const PurgeSchema = v.object({
-  serverName: v.string(),
   channelName: v.string(),
   afterDays: v.number(),
   afterLines: v.number(),
@@ -19,7 +18,6 @@ const PurgeSchema = v.object({
 const ConfigSchema = v.object({
   // Discord settings
   discord: v.object({
-    serverName: v.string(),
     channelName: v.string(),
   }),
 

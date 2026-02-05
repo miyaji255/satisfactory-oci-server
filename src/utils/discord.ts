@@ -23,31 +23,38 @@ export function setDiscordActivity(client: Client, activity: string): void {
 
 export async function sendDiscordMessage(
   client: Client,
-  serverName: string,
   channelName: string,
   message: string,
 ): Promise<void> {
   if (!message) return;
 
-  const targetChannel = client.channels.cache.find(
+  // Find all matching channels (not server-specific)
+  const targetChannels = client.channels.cache.filter(
     (channel) =>
-      channel.type === ChannelType.GuildText && channel.guild.name === serverName && channel.name === channelName,
+      channel.type === ChannelType.GuildText && channel.name === channelName,
   );
-  if (!targetChannel || /** Type Narrowing */ targetChannel.type !== ChannelType.GuildText) {
-    console.error(`チャンネルが見つかりません: ${serverName}: ${channelName}`);
+
+  if (targetChannels.size === 0) {
+    console.error(`チャンネルが見つかりません: ${channelName}`);
     return;
   }
 
-  if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.SendMessages)) {
-    console.error(`チャンネルにメッセージを送る権限がありません: ${serverName}: ${channelName}`);
-    return;
-  }
+  // Send to all matching channels
+  for (const targetChannel of targetChannels.values()) {
+    if (targetChannel.type !== ChannelType.GuildText) continue;
 
-  console.log(`Sending message to: ${serverName}: ${channelName}`);
-  try {
-    await targetChannel.send(message);
-  } catch (error) {
-    console.error(error);
+    const guildName = targetChannel.guild.name;
+    if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.SendMessages)) {
+      console.error(`チャンネルにメッセージを送る権限がありません: ${guildName}: ${channelName}`);
+      continue;
+    }
+
+    console.log(`Sending message to: ${guildName}: ${channelName}`);
+    try {
+      await targetChannel.send(message);
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 
@@ -69,51 +76,57 @@ export function getNextPurge(hour: number = 2): number {
 }
 
 export async function attemptPurge(client: Client, config: PurgeConfig): Promise<void> {
-  const targetChannel = client.channels.cache.find(
+  // Find all matching channels (not server-specific)
+  const targetChannels = client.channels.cache.filter(
     (channel) =>
-      channel.type === ChannelType.GuildText &&
-      channel.guild.name === config.serverName &&
-      channel.name === config.channelName,
+      channel.type === ChannelType.GuildText && channel.name === config.channelName,
   );
 
-  if (!targetChannel || /** Type Narrowing */ targetChannel.type !== ChannelType.GuildText) {
-    console.error(`チャンネルが見つかりません: ${config.serverName}: ${config.channelName}`);
+  if (targetChannels.size === 0) {
+    console.error(`チャンネルが見つかりません: ${config.channelName}`);
     return;
   }
 
-  if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.ViewChannel)) {
-    console.error(`チャンネルを表示する権限がありません: ${config.serverName}: ${config.channelName}`);
-    return;
-  }
+  // Purge messages from all matching channels
+  for (const targetChannel of targetChannels.values()) {
+    if (targetChannel.type !== ChannelType.GuildText) continue;
 
-  if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.ManageMessages)) {
-    console.error(`メッセージを管理する権限がありません: ${config.serverName}: ${config.channelName}`);
-    return;
-  }
+    const guildName = targetChannel.guild.name;
 
-  const botUserId = targetChannel.guild.members.me.user.id;
-  const now = Date.now();
-  const purgeTime = config.afterDays * MS_PER_DAY;
-  const purgeLines = config.afterLines;
+    if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.ViewChannel)) {
+      console.error(`チャンネルを表示する権限がありません: ${guildName}: ${config.channelName}`);
+      continue;
+    }
 
-  const messages = await fetchAllMessages(targetChannel);
-  const botMessages = messages
-    .filter((message) => message.author.bot && message.author.id === botUserId)
-    .sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+    if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.ManageMessages)) {
+      console.error(`メッセージを管理する権限がありません: ${guildName}: ${config.channelName}`);
+      continue;
+    }
 
-  const botMessagesToPurge = botMessages.filter((message, index) => {
-    if (index >= purgeLines) return true;
-    if (message.createdTimestamp < now - purgeTime) return true;
-    return false;
-  });
+    const botUserId = targetChannel.guild.members.me.user.id;
+    const now = Date.now();
+    const purgeTime = config.afterDays * MS_PER_DAY;
+    const purgeLines = config.afterLines;
 
-  if (botMessagesToPurge.length > 0) {
-    console.log(`${botMessagesToPurge.length}件のメッセージを削除中（全${botMessages.length}件中）...`);
-    for (const message of botMessagesToPurge) {
-      try {
-        await message.delete();
-      } catch (error) {
-        console.error('メッセージの削除に失敗しました:', error);
+    const messages = await fetchAllMessages(targetChannel);
+    const botMessages = messages
+      .filter((message) => message.author.bot && message.author.id === botUserId)
+      .sort((a, b) => b.createdTimestamp - a.createdTimestamp);
+
+    const botMessagesToPurge = botMessages.filter((message, index) => {
+      if (index >= purgeLines) return true;
+      if (message.createdTimestamp < now - purgeTime) return true;
+      return false;
+    });
+
+    if (botMessagesToPurge.length > 0) {
+      console.log(`${guildName}: ${botMessagesToPurge.length}件のメッセージを削除中（全${botMessages.length}件中）...`);
+      for (const message of botMessagesToPurge) {
+        try {
+          await message.delete();
+        } catch (error) {
+          console.error('メッセージの削除に失敗しました:', error);
+        }
       }
     }
   }

@@ -1,8 +1,7 @@
 {
   // Discord settings
   "discord": {
-    "serverName": "My Server",
-    "channelName": "bot-log"
+    "channelName": "satisfactory"
   },
 
   // Server settings
@@ -27,8 +26,7 @@
 
   // Purge settings
   "purge": {
-    "serverName": "My Server",
-    "channelName": "bot-log",
+    "channelName": "satisfactory",
     "afterDays": 7,
     "afterLines": 100,
     "hour": 2,
