@@ -20,7 +20,7 @@
 
   // Log settings
   "log": {
-    "location": "/path/to/FactoryGame.log",
+    "location": "/config/gamefiles/FactoryGame/Saved/Logs/FactoryGame.log",
     "useWatchFile": false
   },
 
