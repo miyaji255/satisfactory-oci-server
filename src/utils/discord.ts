@@ -28,14 +28,24 @@ export async function sendDiscordMessage(
 ): Promise<void> {
   if (!message) return;
 
+  console.log(`[DISCORD] Searching for channel: "${channelName}"`);
+
   // Find all matching channels (not server-specific)
   const targetChannels = client.channels.cache.filter(
     (channel) =>
       channel.type === ChannelType.GuildText && channel.name === channelName,
   );
 
+  console.log(`[DISCORD] Found ${targetChannels.size} matching channel(s)`);
+
   if (targetChannels.size === 0) {
-    console.error(`チャンネルが見つかりません: ${channelName}`);
+    console.error(`[DISCORD] ERROR: No channels found with name: "${channelName}"`);
+    console.error(`[DISCORD] Available channels:`);
+    client.channels.cache.forEach(channel => {
+      if (channel.type === ChannelType.GuildText) {
+        console.error(`[DISCORD]   - #${channel.name} (in ${channel.guild.name})`);
+      }
+    });
     return;
   }
 
@@ -44,16 +54,21 @@ export async function sendDiscordMessage(
     if (targetChannel.type !== ChannelType.GuildText) continue;
 
     const guildName = targetChannel.guild.name;
+    console.log(`[DISCORD] Checking permissions for: ${guildName} > #${channelName}`);
+
     if (!targetChannel.guild.members.me?.permissionsIn(targetChannel)?.has(PermissionsBitField.Flags.SendMessages)) {
-      console.error(`チャンネルにメッセージを送る権限がありません: ${guildName}: ${channelName}`);
+      console.error(`[DISCORD] ERROR: No permission to send messages in: ${guildName} > #${channelName}`);
       continue;
     }
 
-    console.log(`Sending message to: ${guildName}: ${channelName}`);
+    console.log(`[DISCORD] Sending message to: ${guildName} > #${channelName}`);
+    console.log(`[DISCORD] Message preview: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`);
     try {
       await targetChannel.send(message);
+      console.log(`[DISCORD] Message sent successfully to: ${guildName} > #${channelName}`);
     } catch (error) {
-      console.error(error);
+      console.error(`[DISCORD] ERROR: Failed to send message to: ${guildName} > #${channelName}`);
+      console.error(`[DISCORD] Error:`, error);
     }
   }
 }

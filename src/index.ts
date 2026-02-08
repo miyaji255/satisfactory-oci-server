@@ -39,6 +39,8 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
   const previouslyUnreachable = db.server.unreachable;
   const previouslyOnline = db.server.online;
 
+  console.log(`[DEBUG] Starting server probe... Target: ${config.server.ip}:${config.server.port}`);
+
   try {
     // @ts-ignore - probe library may not have perfect types
     const data = await probe(
@@ -46,6 +48,14 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
       config.server.port,
       config.server.queryTimeoutMs,
     );
+
+    console.log(`[DEBUG] Probe result:`, {
+      serverState: data.serverState,
+      serverVersion: data.serverVersion,
+      playerName: data.playerName,
+      playerCount: data.playerCount,
+      maxPlayers: data.maxPlayers,
+    });
 
     // Handle unreachable -> reachable
     if (previouslyUnreachable && !config.disableUnreachableFoundMessages) {
@@ -85,7 +95,16 @@ async function update(client: ReturnType<typeof createDiscordClient>): Promise<v
 
     await saveDatabase(config.dbPath, db);
   } catch (error) {
-    console.error(error);
+    console.error('[ERROR] Server probe failed:', error);
+    console.error('[ERROR] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      config: {
+        ip: config.server.ip,
+        port: config.server.port,
+        timeout: config.server.queryTimeoutMs,
+      },
+    });
     setDiscordActivity(client, '不明');
 
     if (!db.server.unreachable) {
@@ -331,22 +350,39 @@ async function startLogWatcher(onLine: (line: string) => Promise<void>): Promise
 }
 
 async function main(): Promise<void> {
-  console.log(`Poll interval: ${config.pollIntervalMinutes} minutes (${config.pollIntervalMinutes * MS_PER_MINUTE} milliseconds)`);
+  console.log(`[INIT] Poll interval: ${config.pollIntervalMinutes} minutes (${config.pollIntervalMinutes * MS_PER_MINUTE} milliseconds)`);
+  console.log(`[INIT] Config:`, {
+    serverIp: config.server.ip,
+    serverPort: config.server.port,
+    maxPlayers: config.server.maxPlayers,
+    queryTimeout: config.server.queryTimeoutMs,
+    discordChannel: config.discord.channelName,
+    logLocation: config.log.location,
+  });
 
   // Load database
   db = await loadDatabase(config.dbPath);
+  console.log(`[INIT] Database loaded from: ${config.dbPath}`);
 
   // Create Discord client with automatic disposal
   await using client = createDiscordClient();
+  console.log(`[INIT] Discord client created`);
 
   // Wait for ready event
   await new Promise<void>((resolve) => {
     client.once('ready', () => {
       initTime = Date.now();
+      console.log(`[DISCORD] Bot is ready! Logged in as: ${client.user?.tag}`);
+      console.log(`[DISCORD] Connected to ${client.guilds.cache.size} guild(s)`);
+      // List all guilds
+      client.guilds.cache.forEach(guild => {
+        console.log(`[DISCORD]   - ${guild.name} (ID: ${guild.id})`);
+      });
       resolve();
     });
   });
 
+  console.log(`[DISCORD] Logging in...`);
   await client.login(discordToken);
 
   // Setup purging
@@ -355,23 +391,28 @@ async function main(): Promise<void> {
       await attemptPurgeDiscord(client, config.purge);
     } else {
       nextPurge = getNextPurge(config.purge.hour);
-      console.log(`First purge will be ${new Date(nextPurge)}`);
+      console.log(`[PURGE] First purge will be ${new Date(nextPurge)}`);
     }
   }
 
   // Start polling
+  console.log(`[POLL] Starting server poll...`);
   await update(client);
   pollInterval = setInterval(() => update(client), config.pollIntervalMinutes * MS_PER_MINUTE);
+  console.log(`[POLL] Polling started (interval: ${config.pollIntervalMinutes} minutes)`);
 
   // Start log watching
+  console.log(`[LOG] Starting log watcher for: ${config.log.location}`);
   try {
     await startLogWatcher((msg) => handleLogLine(client, msg));
+    console.log(`[LOG] Log watcher started successfully`);
   } catch (error) {
-    console.error(error);
+    console.error(`[ERROR] Log watcher failed:`, error);
     process.exit(3);
   }
 
   // Keep process alive
+  console.log(`[INIT] Bot is running. Press Ctrl+C to exit.`);
   await new Promise<void>(() => {});
 }
 
