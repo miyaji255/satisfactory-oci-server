@@ -1,13 +1,22 @@
 import { $ } from "bun";
 import { rm } from "node:fs/promises";
 
-console.log("Building satisfactory-service...");
+console.log("Building Satisfactory-Discord-Bot with Bun...");
 
+// Clean dist directory
 await rm(`${import.meta.dirname}/dist`, { recursive: true, force: true });
 
+// Create dist directory for output
+await $`mkdir -p ${import.meta.dirname}/dist`;
+
+// Install dependencies in Satisfactory-Discord-Bot
+console.log("Installing dependencies...");
+await $`npm ci`.cwd(`${import.meta.dirname}/Satisfactory-Discord-Bot`);
+
+// Build single binary using Bun.build API
+console.log("Compiling to single binary...");
 await Bun.build({
-  entrypoints: [`${import.meta.dirname}/src/index.ts`],
-  tsconfig: `${import.meta.dirname}/tsconfig.json`,
+  entrypoints: [`${import.meta.dirname}/Satisfactory-Discord-Bot/bin/server.js`],
   format: "cjs",
   compile: {
     outfile: `${import.meta.dirname}/dist/satisfactory-service`,
@@ -18,12 +27,14 @@ await Bun.build({
   bytecode: true,
   minify: true,
   target: "bun",
-  sourcemap: "inline"
+  sourcemap: "inline",
 });
 
 console.log("Build completed.");
+console.log("Binary: dist/satisfactory-service");
 
 // Only run docker build if not in CI
 if (!process.env.CI) {
+  console.log("Building Docker image...");
   await $`docker buildx build .`.cwd(import.meta.dirname);
 }

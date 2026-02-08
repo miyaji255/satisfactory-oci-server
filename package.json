@@ -16,10 +16,5 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "dependencies": {
-    "@djwoodz/satisfactory-dedicated-server-lightweight-query-probe": "^0.1.0",
-    "arkregex": "^0.0.5",
-    "discord.js": "^14.22.1",
-    "valibot": "^1.2.0"
-  }
+  "dependencies": {}
 }
